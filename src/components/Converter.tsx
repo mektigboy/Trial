@@ -7,10 +7,20 @@ import {
   web3,
 } from "@project-serum/anchor";
 import { ChangeEvent, useState } from "react";
-import { Commitment, Connection, PublicKey } from "@solana/web3.js";
+import {
+  Commitment,
+  Connection,
+  Keypair,
+  PublicKey,
+  SYSVAR_RENT_PUBKEY,
+} from "@solana/web3.js";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import idl from "../convertion.json";
+import idl from "../convertion.json"; // Smart Contract
 
 const options: { preflightCommitment: Commitment } = {
   preflightCommitment: "processed",
@@ -26,6 +36,15 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
   const wallet = useWallet();
 
   const [amount, setAmount] = useState<number>(1);
+  const [address, setAddress] = useState("");
+
+  const onAmountChange = (event: ChangeEvent<any>) => {
+    setAmount(event.target.value);
+  };
+
+  const onAddressChange = (event: ChangeEvent<any>) => {
+    setAddress(event.target.value);
+  };
 
   const getProgram = () => {
     const connection = new Connection(network, options.preflightCommitment);
@@ -36,19 +55,35 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
 
   const program = getProgram();
 
-  const onAmountChange = (e: ChangeEvent<any>) => {
-    setAmount(e.target.value);
+  const initializeVault = async () => {
+    const authority = Keypair.generate();
+    const vaultKeypair = Keypair.generate();
+
+    const [vaultPool, bump] = await PublicKey.findProgramAddress(
+      [utils.bytes.utf8.encode("vault_yaku"), wallet.publicKey!.toBuffer()],
+      program.programId
+    );
+
+    const yakuMint = await Mint.create(program, authority, publicKey, 2);
+
+    await program.methods.initializeVault(bump, {
+      accounts: {
+        authority: authority.publicKey,
+        vault: vaultKeypair.publicKey,
+        vaultPool,
+        vaultPoolYakuAccount,
+        yakuMint: yakuMint.key,
+        rent: SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedToken: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+      },
+      signers: [authority, vaultKeypair],
+    });
   };
 
-  const convert = async (convertKey: PublicKey) => {
-    await program.methods
-      .convert(new BN(amount))
-      .accounts({
-        convert: convertKey,
-        user: wallet.publicKey!,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .rpc();
+  const handleConversion = async () => {
+    initializeVault();
   };
 
   return (
@@ -63,11 +98,22 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
           <div className="cosmic">$COSMIC</div>
         </div>
       </div>
-      <div>
-        <label className="mb-25">You will receive:</label>
+      <div className="mb-25">
+        <label>Enter address:</label>
+        <div className="input">
+          <input
+            onChange={onAddressChange}
+            type="text
+          "
+            value={address}
+          />
+        </div>
+      </div>
+      <div className="mb-25">
+        <label className="mb-25">You will receive: </label>
         $YAKU
       </div>
-      <button className="convert-button" onClick={(convert)}>
+      <button className="convert-button" onClick={handleConversion}>
         Convert
       </button>
     </div>
