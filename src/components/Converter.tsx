@@ -21,12 +21,6 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 import idl from "../convertion.json";
 
-const options: { preflightCommitment: Commitment } = {
-  preflightCommitment: "processed",
-};
-
-const programId = new PublicKey(idl.metadata.address);
-
 interface ConverterProps {
   network: string;
 }
@@ -35,19 +29,37 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
   const wallet = useWallet();
 
   const [amount, setAmount] = useState<number>(1);
+  const [address, setAddress] = useState<string>("");
 
   const onAmountChange = (event: ChangeEvent<any>) => {
     setAmount(event.target.value);
   };
+  const onAddressChange = (event: ChangeEvent<any>) => {
+    setAddress(event.target.value);
+  };
 
-  const getProgram = () => {
+  const options: { preflightCommitment: Commitment } = {
+    preflightCommitment: "processed",
+  };
+
+  const programId = new PublicKey(
+    "HZy4kyk53Zsrzgv84fuRmuXFNar9VAyJmqwVZtK1iEVy"
+  );
+
+  const getConnectionProvider = () => {
     const connection = new Connection(network, options.preflightCommitment);
     const provider = new AnchorProvider(connection, wallet as any, options);
+    return provider;
+  };
+  const provider = getConnectionProvider();
+
+  const getProgram = () => {
     const program = new Program(idl as unknown as Idl, programId, provider);
     return program;
   };
   const program = getProgram();
 
+  const yakuMint = "NGK3iHqqQkyRZUj4uhJDQqEyKKcZ7mdawWpqwMffM3s";
   const cosmicMint = "326vsKSXsf1EsPU1eKstzHwHmHyxsbavY4nTJGEm3ugV";
   const claimerYakuAccount = "";
   const claimerCosmicAccount = "";
@@ -61,37 +73,35 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
       program.programId
     );
 
-    const yakuMint = "NGK3iHqqQkyRZUj4uhJDQqEyKKcZ7mdawWpqwMffM3s";
-    await yakuMint.getAssociatedTokenAddress()
-
     //Initialize Vault
-    await program.methods
+    const initialization = await program.methods
       .initializeVault(bump)
       .accounts({
         authority: wallet.publicKey!,
         vault: vaultKeypair.publicKey!,
-        vaultPool,
-        // vaultPoolYakuAccount,
-        yakuMint,
+        vaultPool: vaultPool,
+        vaultPoolYakuAccount: wallet.publicKey!,
+        yakuMint: yakuMint,
         rent: SYSVAR_RENT_PUBKEY,
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedToken: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
       })
       .rpc();
+    console.log(initialization);
 
     // Convert
-    await program.methods
+    const conversion = await program.methods
       .convert(amount)
       .accounts({
-        claimer: wallet.publicKey!,
-        claimerYakuAccount,
-        cosmicMint,
+        claimer: address,
+        claimerYakuAccount: claimerCosmicAccount,
+        cosmicMint: cosmicMint,
         claimerCosmicAccount,
-        vault: vaultKeypair.publicKey,
+        vault: vaultKeypair.publicKey!,
         vaultCosmicAccount,
-        vaultPool,
-        yakuMint,
+        vaultPool: vaultPool,
+        yakuMint: yakuMint,
         // vaultPoolYakuAccount,
         rent: SYSVAR_RENT_PUBKEY,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -99,6 +109,7 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
         systemProgram: web3.SystemProgram.programId,
       })
       .rpc();
+    console.log(conversion);
   };
 
   return (
@@ -111,6 +122,12 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
         <div className="input">
           <input onChange={onAmountChange} type="number" value={amount} />
           <div className="cosmic">$COSMIC</div>
+        </div>
+      </div>
+      <div className="mb-25">
+        <label>Enter address:</label>
+        <div className="input">
+          <input onChange={onAddressChange} type="text" value={address} />
         </div>
       </div>
       <div className="mb-25">
