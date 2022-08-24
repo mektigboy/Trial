@@ -6,34 +6,20 @@ import {
   web3,
 } from "@project-serum/anchor";
 import {
-  clusterApiUrl,
   Commitment,
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
-  SystemProgram,
   SYSVAR_RENT_PUBKEY,
-  Transaction,
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccount,
-  createAssociatedTokenAccountInstruction,
-  createInitializeMintInstruction,
-  createMintToCheckedInstruction,
-  createMint,
-  getAssociatedTokenAddress,
-  getMinimumBalanceForRentExemptMint,
-  mintTo,
-  MINT_SIZE,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { ChangeEvent, useState } from "react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { WalletContextState, useWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import idl from "../convertion.json";
-import { create } from "domain";
 
 const options: { preflightCommitment: Commitment } = {
   preflightCommitment: "processed",
@@ -47,8 +33,6 @@ interface ConverterProps {
 
 export const Converter: React.FC<ConverterProps> = ({ network }) => {
   const wallet = useWallet();
-
-  const vaultKeypair = Keypair.generate();
 
   const [amount, setAmount] = useState<number>(1);
 
@@ -64,14 +48,21 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
   };
   const program = getProgram();
 
-  const yakuMint = "NGK3iHqqQkyRZUj4uhJDQqEyKKcZ7mdawWpqwMffM3s";
   const cosmicMint = "326vsKSXsf1EsPU1eKstzHwHmHyxsbavY4nTJGEm3ugV";
+  const claimerYakuAccount = "";
+  const claimerCosmicAccount = "";
+  const vaultCosmicAccount = "";
 
   const conversion = async () => {
+    const vaultKeypair = Keypair.generate();
+
     const [vaultPool, bump] = await PublicKey.findProgramAddress(
       [utils.bytes.utf8.encode("vault_yaku"), wallet.publicKey!.toBuffer()],
       program.programId
     );
+
+    const yakuMint = "NGK3iHqqQkyRZUj4uhJDQqEyKKcZ7mdawWpqwMffM3s";
+    await yakuMint.getAssociatedTokenAddress()
 
     //Initialize Vault
     await program.methods
@@ -94,11 +85,11 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
       .convert(amount)
       .accounts({
         claimer: wallet.publicKey!,
-        // claimerYakuAccount,
+        claimerYakuAccount,
         cosmicMint,
-        // claimerCosmicAccount: claimerCosmicAccount.key,
+        claimerCosmicAccount,
         vault: vaultKeypair.publicKey,
-        // vaultCosmicAccount,
+        vaultCosmicAccount,
         vaultPool,
         yakuMint,
         // vaultPoolYakuAccount,
