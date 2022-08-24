@@ -1,5 +1,6 @@
 import {
   AnchorProvider,
+  BN,
   Idl,
   Program,
   utils,
@@ -32,8 +33,6 @@ interface ConverterProps {
 
 export const Converter: React.FC<ConverterProps> = ({ network }) => {
   const wallet = useWallet();
-  console.log(wallet);
-  console.log(wallet.publicKey);
 
   const [amount, setAmount] = useState<number>(1);
 
@@ -105,6 +104,7 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
       yakuMint,
       wallet.publicKey!
     );
+    const claimerYaku = new PublicKey(claimerYakuAccount);
     const claimerCosmicAccount = await getAssociatedTokenAddress(
       cosmicMint,
       wallet.publicKey!
@@ -112,13 +112,13 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
 
     // Convert
     await program.methods
-      .convert(amount)
+      .convert(new BN(amount))
       .accounts({
         accounts: {
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           claimer: wallet.publicKey!,
           claimerCosmicAccount: claimerCosmicAccount,
-          claimerYakuAccount: claimerYakuAccount,
+          claimerYakuAccount: claimerYaku,
           cosmicMint: cosmicMint,
           rent: SYSVAR_RENT_PUBKEY,
           systemProgram: SystemProgram.programId,
