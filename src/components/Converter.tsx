@@ -43,7 +43,7 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
   };
 
   const programId = new PublicKey(
-    "HZy4kyk53Zsrzgv84fuRmuXFNar9VAyJmqwVZtK1iEVy"
+    "FwKcQXnCknsvRgxHK5moPUyEtai61VCftLKS1tungYrA"
   );
 
   const getConnectionProvider = () => {
