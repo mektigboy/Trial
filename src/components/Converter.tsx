@@ -1,10 +1,4 @@
-import {
-  AnchorProvider,
-  BN,
-  Idl,
-  Program,
-  utils,
-} from "@project-serum/anchor";
+import { AnchorProvider, BN, Idl, Program, utils } from "@project-serum/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
@@ -82,16 +76,17 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
       .initializeVault(bump)
       .accounts({
         authority: wallet.publicKey!,
-        associatedToken: ASSOCIATED_TOKEN_PROGRAM_ID,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
         vault: vaultKeypair.publicKey,
-        vaultPool: vaultPool,
-        vaultPoolYakuAccount: vaultPoolYakuAccount,
-        yakuMint: yakuMint,
+        vaultPool,
+        vaultPoolYakuAccount,
+        yakuMint,
+        rent: SYSVAR_RENT_PUBKEY,
+        associatedToken: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
-      .signers([vaultKeypair]).rpc;
+      .signers([vaultKeypair])
+      .rpc();
 
     const cosmicMint = new PublicKey(
       "326vsKSXsf1EsPU1eKstzHwHmHyxsbavY4nTJGEm3ugV"
@@ -104,7 +99,6 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
       yakuMint,
       wallet.publicKey!
     );
-    const claimerYaku = new PublicKey(claimerYakuAccount);
     const claimerCosmicAccount = await getAssociatedTokenAddress(
       cosmicMint,
       wallet.publicKey!
@@ -114,21 +108,19 @@ export const Converter: React.FC<ConverterProps> = ({ network }) => {
     await program.methods
       .convert(new BN(amount))
       .accounts({
-        accounts: {
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          claimer: wallet.publicKey!,
-          claimerCosmicAccount: claimerCosmicAccount,
-          claimerYakuAccount: claimerYaku,
-          cosmicMint: cosmicMint,
-          rent: SYSVAR_RENT_PUBKEY,
-          systemProgram: SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          vault: vaultKeypair.publicKey,
-          vaultCosmicAccount: vaultCosmicAccount,
-          vaultPool: vaultPool,
-          vaultPoolYakuAccount: vaultPoolYakuAccount,
-          yakuMint: yakuMint,
-        },
+        claimer: wallet.publicKey!,
+        claimerYakuAccount,
+        cosmicMint,
+        claimerCosmicAccount,
+        vaultCosmicAccount,
+        vault: vaultKeypair.publicKey,
+        vaultPool,
+        yakuMint,
+        vaultPoolYakuAccount,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
       .rpc();
   };
